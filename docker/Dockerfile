@@ -1,6 +1,6 @@
 # pre-build stage
 FROM node:18-alpine as node
-FROM ruby:3.2.2-alpine AS pre-builder
+FROM ruby:3.3.3-alpine AS pre-builder
 
 ARG NODE_VERSION="18.19.1"
 ARG PNPM_VERSION="10.2.0"
@@ -98,7 +98,7 @@ RUN rm -rf /gems/ruby/3.3.0/cache/*.gem \
   && rm .gitignore
 
 # final build stage
-FROM ruby:3.2.2-alpine
+FROM ruby:3.3.3-alpine
 
 ARG NODE_VERSION="18.19.1"
 ARG PNPM_VERSION="10.2.0"
