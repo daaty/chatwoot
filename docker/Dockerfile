@@ -11,7 +11,10 @@ ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
     NODE_ENV=production \
     BUNDLE_WITHOUT="development:test" \
     BUNDLE_DEPLOYMENT="true" \
-    BUNDLE_PATH="/usr/local/bundle"
+    BUNDLE_PATH="/usr/local/bundle" \
+    NPM_CONFIG_LOGLEVEL=error \
+    PNPM_HOME="/root/.local/share/pnpm" \
+    PATH="/root/.local/share/pnpm:$PATH"
 
 # Install base dependencies
 RUN apk update && apk add --no-cache \
@@ -33,7 +36,8 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install -g pnpm@10.2.0
+    && npm install -g pnpm@10.2.0 \
+    && pnpm config set store-dir /root/.local/share/pnpm/store
 
 WORKDIR /app
 
@@ -45,7 +49,7 @@ RUN bundle config set --local deployment true \
 
 # Install Node dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy application code
 COPY . .
@@ -69,13 +73,14 @@ ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
     BUNDLE_PATH="/usr/local/bundle" \
     PATH="/app/bin:${PATH}"
 
-# Install runtime dependencies only
+# Install runtime dependencies
 RUN apk add --no-cache \
     tzdata \
     postgresql-client \
-    vips
+    vips \
+    && gem install bundler
 
-# Copy gems, node_modules and app from builder
+# Copy from builder
 COPY --from=pre-builder /usr/local/bundle /usr/local/bundle
 COPY --from=pre-builder /app /app
 COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
