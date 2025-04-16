@@ -58,8 +58,15 @@ class Attachment < ApplicationRecord
 
   # NOTE: for External services use this methods since redirect doesn't work effectively in a lot of cases
   def download_url
-    ActiveStorage::Current.url_options = Rails.application.routes.default_url_options if ActiveStorage::Current.url_options.blank?
-    file.attached? ? file.blob.url : ''
+    return '' unless file.attached?
+
+    # Ensure we have the correct URL options
+    ActiveStorage::Current.url_options = {
+      host: ENV.fetch('FRONTEND_URL', 'chatwoot.rotadoscelulares.com'),
+      protocol: 'https'
+    }
+
+    file.blob.url
   end
 
   def thumb_url
