@@ -1,8 +1,8 @@
 # pre-build stage
-FROM node:23-alpine as node
-FROM ruby:3.3.3-alpine3.19 AS pre-builder
+FROM node:18-alpine as node
+FROM ruby:3.2.2-alpine AS pre-builder
 
-ARG NODE_VERSION="23.7.0"
+ARG NODE_VERSION="18.19.1"
 ARG PNPM_VERSION="10.2.0"
 ENV NODE_VERSION=${NODE_VERSION}
 ENV PNPM_VERSION=${PNPM_VERSION}
@@ -34,6 +34,7 @@ RUN apk update && apk add --no-cache \
   git \
   curl \
   xz \
+  vips \
   && mkdir -p /var/app \
   && gem install bundler
 
@@ -83,6 +84,7 @@ RUN mkdir -p /app/log
 # generate production assets if production environment
 RUN if [ "$RAILS_ENV" = "production" ]; then \
   SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
+  && VITE_RUBY_ENV=production bundle exec rake vite:build \
   && rm -rf spec node_modules tmp/cache; \
   fi
 
@@ -96,9 +98,9 @@ RUN rm -rf /gems/ruby/3.3.0/cache/*.gem \
   && rm .gitignore
 
 # final build stage
-FROM ruby:3.3.3-alpine3.19
+FROM ruby:3.2.2-alpine
 
-ARG NODE_VERSION="23.7.0"
+ARG NODE_VERSION="18.19.1"
 ARG PNPM_VERSION="10.2.0"
 ENV NODE_VERSION=${NODE_VERSION}
 ENV PNPM_VERSION=${PNPM_VERSION}
