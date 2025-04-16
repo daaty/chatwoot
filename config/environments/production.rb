@@ -102,5 +102,13 @@ Rails.application.configure do
   # :sendgrid for Sendgrid
   config.action_mailbox.ingress = ENV.fetch('RAILS_INBOUND_EMAIL_SERVICE', 'relay').to_sym
 
-  Rails.application.routes.default_url_options = { host: ENV['FRONTEND_URL'] }
+  Rails.application.routes.default_url_options = {
+    host: ENV.fetch('FRONTEND_URL', 'chatwoot.rotadoscelulares.com'),
+    protocol: 'https'
+  }
+
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch('FRONTEND_URL', 'chatwoot.rotadoscelulares.com'),
+    protocol: 'https'
+  }
 end
