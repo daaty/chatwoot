@@ -2,14 +2,16 @@
 FROM node:18-alpine AS node
 FROM ruby:3.3.3-alpine AS pre-builder
 
-# Set environment variables using the new format
+# Set environment variables
 ENV NODE_VERSION="18.19.1" \
     PNPM_VERSION="10.2.0" \
     BUNDLE_WITHOUT="development:test" \
     BUNDLER_VERSION="2.5.11" \
     RAILS_SERVE_STATIC_FILES="true" \
     RAILS_ENV="production" \
-    NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider" \
+    NODE_ENV="production" \
+    VITE_RUBY_ENV="production" \
+    NODE_OPTIONS="--max-old-space-size=4096" \
     BUNDLE_PATH="/gems" \
     BUNDLE_JOBS=4 \
     BUNDLE_RETRY=3
@@ -27,7 +29,7 @@ RUN apk update && apk add --no-cache \
     xz \
     vips \
     && mkdir -p /var/app \
-    && gem install bundler
+    && gem install bundler -v ${BUNDLER_VERSION}
 
 # Setup Node and PNPM
 COPY --from=node /usr/local/bin/node /usr/local/bin/
@@ -49,22 +51,20 @@ RUN bundle config set --local force_ruby_platform true \
 
 # Install Node dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy application code
 COPY . /app
 
 # Create required directories
-RUN mkdir -p /app/log
+RUN mkdir -p /app/log /app/tmp/pids
 
-# Build assets if production
-RUN if [ "$RAILS_ENV" = "production" ]; then \
-    SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
+# Build assets for production
+RUN SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
     && VITE_RUBY_ENV=production bundle exec rake vite:build \
-    && rm -rf spec node_modules tmp/cache; \
-    fi
+    && rm -rf spec node_modules tmp/cache
 
-# Generate git SHA and cleanup
+# Generate git SHA
 RUN git rev-parse HEAD > /app/.git_sha \
     && rm -rf /gems/ruby/3.3.0/cache/*.gem \
     && find /gems/ruby/3.3.0/gems/ \( -name "*.c" -o -name "*.o" \) -delete \
@@ -73,45 +73,27 @@ RUN git rev-parse HEAD > /app/.git_sha \
 # Final stage
 FROM ruby:3.3.3-alpine
 
-# Set environment variables
-ENV NODE_VERSION="18.19.1" \
-    PNPM_VERSION="10.2.0" \
-    BUNDLE_WITHOUT="development:test" \
-    BUNDLER_VERSION="2.5.11" \
-    EXECJS_RUNTIME="Disabled" \
-    RAILS_SERVE_STATIC_FILES="true" \
-    BUNDLE_FORCE_RUBY_PLATFORM="1" \
-    RAILS_ENV="production" \
-    BUNDLE_PATH="/gems"
-
-# Install runtime dependencies
-RUN apk update && apk add --no-cache \
-    build-base \
-    openssl \
-    tzdata \
-    postgresql-client \
-    imagemagick \
-    git \
-    vips \
-    && gem install bundler
-
-# Copy node from builder
-COPY --from=node /usr/local/bin/node /usr/local/bin/
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-
-# Install development tools if not in production
-RUN if [ "$RAILS_ENV" != "production" ]; then \
-    apk add --no-cache curl \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install -g pnpm@${PNPM_VERSION}; \
-    fi
-
-# Copy artifacts from builder
+# Copy required files from builder
 COPY --from=pre-builder /gems/ /gems/
 COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
+COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
+
+# Set runtime environment variables
+ENV RAILS_ENV="production" \
+    NODE_ENV="production" \
+    BUNDLE_PATH="/gems" \
+    PATH="/app/bin:${PATH}"
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    tzdata \
+    postgresql-client \
+    vips \
+    && gem install bundler
 
 WORKDIR /app
 
 EXPOSE 3000
+
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
