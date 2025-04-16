@@ -2,6 +2,9 @@
 FROM node:18-alpine AS node
 FROM ruby:3.3.3-alpine AS pre-builder
 
+ARG SECRET_KEY_BASE
+ENV SECRET_KEY_BASE=${SECRET_KEY_BASE}
+
 # Set environment variables
 ENV NODE_VERSION="18.19.1" \
     PNPM_VERSION="10.2.0" \
@@ -14,7 +17,9 @@ ENV NODE_VERSION="18.19.1" \
     NODE_OPTIONS="--max-old-space-size=4096" \
     BUNDLE_PATH="/gems" \
     BUNDLE_JOBS=4 \
-    BUNDLE_RETRY=3
+    BUNDLE_RETRY=3 \
+    PNPM_HOME="/root/.local/share/pnpm" \
+    PATH="/root/.local/share/pnpm:$PATH"
 
 # Install base dependencies
 RUN apk update && apk add --no-cache \
@@ -38,10 +43,6 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && npm install -g pnpm@${PNPM_VERSION}
 
-# Setup PNPM environment
-ENV PNPM_HOME="/root/.local/share/pnpm" \
-    PATH="$PNPM_HOME:$PATH"
-
 WORKDIR /app
 
 # Install Ruby dependencies
@@ -56,12 +57,13 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 # Copy application code
 COPY . /app
 
-# Create required directories
-RUN mkdir -p /app/log /app/tmp/pids
+# Create required directories and set permissions
+RUN mkdir -p /app/log /app/tmp/pids /app/tmp/cache \
+    && chmod -R 777 /app/log /app/tmp
 
 # Build assets for production
-RUN SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
-    && VITE_RUBY_ENV=production bundle exec rake vite:build \
+RUN RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
+    && bundle exec rake vite:build \
     && rm -rf spec node_modules tmp/cache
 
 # Generate git SHA
@@ -73,14 +75,9 @@ RUN git rev-parse HEAD > /app/.git_sha \
 # Final stage
 FROM ruby:3.3.3-alpine
 
-# Copy required files from builder
-COPY --from=pre-builder /gems/ /gems/
-COPY --from=pre-builder /app /app
-COPY --from=pre-builder /app/.git_sha /app/.git_sha
-COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
-
-# Set runtime environment variables
-ENV RAILS_ENV="production" \
+ARG SECRET_KEY_BASE
+ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
+    RAILS_ENV="production" \
     NODE_ENV="production" \
     BUNDLE_PATH="/gems" \
     PATH="/app/bin:${PATH}"
@@ -91,6 +88,12 @@ RUN apk add --no-cache \
     postgresql-client \
     vips \
     && gem install bundler
+
+# Copy required files from builder
+COPY --from=pre-builder /gems/ /gems/
+COPY --from=pre-builder /app /app
+COPY --from=pre-builder /app/.git_sha /app/.git_sha
+COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
 
 WORKDIR /app
 
