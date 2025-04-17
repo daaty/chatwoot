@@ -103,3 +103,4 @@ volumes:
   postgres:
   redis:
   bundle:
+  node_modules:

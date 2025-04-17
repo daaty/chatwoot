@@ -123,6 +123,12 @@ COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
 
 WORKDIR /app
 
-EXPOSE 3000
+# Make port configurable via environment variable
+ENV PORT=3000
+EXPOSE ${PORT}
 
-CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+# Add healthcheck to help Easypanel monitor the app
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
+
+CMD ["sh", "-c", "bundle exec rails server -b 0.0.0.0 -p ${PORT}"]
