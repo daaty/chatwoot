@@ -104,3 +104,5 @@ volumes:
   redis:
   bundle:
   node_modules:
+  packs:  # Added the missing packs volume
+  cache:  # Added the missing cache volume
