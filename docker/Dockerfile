@@ -78,7 +78,9 @@ RUN mkdir -p tmp/pids tmp/cache log \
 # Precompile assets in smaller chunks with optimizations
 RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
     && export NODE_OPTIONS="--max-old-space-size=2048 --max-http-header-size=1024 --no-experimental-fetch" \
-    && export VITE_BUILD_SPLIT=true \
+    && export VITE_BUILD_CHUNKING=true \
+    && export VITE_BUILD_MINIFY=esbuild \
+    && export VITE_BUILD_SOURCE_MAP=false \
     && SECRET_KEY_BASE=${SECRET_KEY_BASE} bundle exec rake vite:build --trace \
     && rm -rf node_modules tmp/cache spec test \
     && pnpm store prune \
