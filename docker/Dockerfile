@@ -40,6 +40,11 @@ RUN apk update && apk add --no-cache \
     g++ \
     linux-headers \
     vips \
+    protobuf \
+    protobuf-dev \
+    grpc \
+    grpc-dev \
+    zlib-dev \
     && mkdir -p /var/app \
     && gem install bundler -v ${BUNDLER_VERSION}
 
@@ -55,9 +60,12 @@ WORKDIR /app
 # Copy essential files first
 COPY Gemfile Gemfile.lock ./
 
-# Configure bundler and install gems
-RUN bundle config set frozen false \
+# Configure bundler and install gems with native extension support
+RUN bundle config set build.google-protobuf --with-protoc=/usr/bin/protoc \
+    && bundle config set build.grpc --with-protoc=/usr/bin/protoc \
+    && bundle config set frozen false \
     && bundle config set deployment true \
+    && bundle config set force_ruby_platform true \
     && BUNDLE_FORCE_RUBY_PLATFORM=1 bundle install --jobs 4 --retry 3 \
     && bundle config set frozen true
 
