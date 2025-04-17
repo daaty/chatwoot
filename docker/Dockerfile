@@ -77,7 +77,7 @@ RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec r
     && export NODE_OPTIONS="--max-old-space-size=2048" \
     && SECRET_KEY_BASE=${SECRET_KEY_BASE} bundle exec rake vite:build \
     && rm -rf node_modules tmp/cache spec test \
-    && yarn cache clean
+    && pnpm store prune
 
 # Final stage
 FROM ruby:3.3.3-alpine
