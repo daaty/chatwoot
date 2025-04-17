@@ -9,9 +9,9 @@ ARG RAILS_ENV=production
 ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
     RAILS_ENV=${RAILS_ENV} \
     NODE_ENV=production \
-    BUNDLE_WITHOUT="development:test" \
     BUNDLE_DEPLOYMENT="true" \
     BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
     NPM_CONFIG_LOGLEVEL=error \
     PNPM_HOME="/root/.local/share/pnpm" \
     PATH="/root/.local/share/pnpm:$PATH"
@@ -41,23 +41,35 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 
 WORKDIR /app
 
-# Install Ruby dependencies
+# Copy essential files first
 COPY Gemfile Gemfile.lock ./
-RUN bundle config set --local deployment true \
-    && bundle config set --local without 'development test' \
-    && bundle install --jobs 4 --retry 3
-
-# Install Node dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile
+COPY .npmrc ./
+
+# Install dependencies with proper config
+RUN bundle config --global frozen 1 \
+    && bundle config --local without development:test \
+    && bundle config --local path /usr/local/bundle \
+    && bundle install -j4 --retry 3 \
+    && pnpm install --no-frozen-lockfile
 
 # Copy application code
 COPY . .
 
-# Build assets
-RUN RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
-    && bundle exec rake vite:build \
-    && rm -rf tmp/cache node_modules
+# Create required directories
+RUN mkdir -p tmp/pids tmp/cache \
+    && chmod -R 777 tmp \
+    && chmod -R 777 log
+
+# Precompile assets
+RUN if [ "$RAILS_ENV" = "production" ]; then \
+      SECRET_KEY_BASE=${SECRET_KEY_BASE} \
+      RAILS_LOG_TO_STDOUT=enabled \
+      NODE_ENV=production \
+      bundle exec rake assets:precompile \
+      && bundle exec rake vite:build \
+      && rm -rf node_modules tmp/cache spec test; \
+    fi
 
 # Final stage
 FROM ruby:3.3.3-alpine
@@ -68,9 +80,9 @@ ARG RAILS_ENV=production
 ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
     RAILS_ENV=${RAILS_ENV} \
     NODE_ENV=production \
-    BUNDLE_WITHOUT="development:test" \
     BUNDLE_DEPLOYMENT="true" \
     BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
     PATH="/app/bin:${PATH}"
 
 # Install runtime dependencies
@@ -86,11 +98,6 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
 
 WORKDIR /app
-
-# Create directories and set permissions
-RUN mkdir -p tmp/pids tmp/cache \
-    && chmod -R 777 tmp \
-    && chmod -R 777 log
 
 EXPOSE 3000
 
