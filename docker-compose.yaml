@@ -22,7 +22,7 @@ services:
       - redis
       - sidekiq
     ports:
-      - '127.0.0.1:3000:3000'  # Voltando para 127.0.0.1 para maior segurança
+      - '127.0.0.1:3001:3001'  # Voltando para 127.0.0.1 para maior segurança
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
@@ -48,7 +48,7 @@ services:
     image: pgvector/pgvector:pg16
     restart: always
     ports:
-      - '127.0.0.1:5432:5432'  # Voltando para 127.0.0.1 para maior segurança
+      - '127.0.0.1:5433:5433'  # Voltando para 127.0.0.1 para maior segurança
     volumes:
       - /data/postgres:/var/lib/postgresql/data
     environment:
@@ -66,7 +66,7 @@ services:
     volumes:
       - /data/redis:/data
     ports:
-      - '127.0.0.1:6379:6379'  # Voltando para 127.0.0.1 para maior segurança
+      - '127.0.0.1:6380:6380'  # Voltando para 127.0.0.1 para maior segurança
 
 volumes:
   # Mantidos os volumes apenas como referência, mas não estamos usando-os
