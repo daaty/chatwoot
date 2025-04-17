@@ -51,11 +51,12 @@ COPY Gemfile Gemfile.lock ./
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies with proper config
-RUN bundle config --global frozen 1 \
-    && bundle config --local without development:test \
-    && bundle config --local path /usr/local/bundle \
-    && bundle install -j4 --retry 3 \
-    && pnpm install --prod --prefer-offline
+RUN apk add --no-cache build-base git && \
+    bundle config --global frozen 1 && \
+    bundle config --local without 'development test' && \
+    bundle config --local path '/usr/local/bundle' && \
+    bundle install --jobs 4 --retry 3 && \
+    pnpm install --prod --prefer-offline --network-timeout 100000
 
 # Copy application code
 COPY . .
