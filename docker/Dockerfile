@@ -9,7 +9,9 @@ ENV PNPM_VERSION=${PNPM_VERSION}
 
 # ARG default to production settings
 ARG BUNDLE_WITHOUT="development:test"
+ARG SECRET_KEY_BASE
 ENV BUNDLE_WITHOUT ${BUNDLE_WITHOUT}
+ENV SECRET_KEY_BASE=${SECRET_KEY_BASE}
 ENV BUNDLER_VERSION=2.5.11
 
 ARG RAILS_ENV=production
@@ -71,8 +73,8 @@ RUN mkdir -p tmp/pids tmp/cache log \
     && chmod -R 777 log
 
 # Precompile assets
-RUN RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
-    && bundle exec rake vite:build \
+RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
+    && SECRET_KEY_BASE=${SECRET_KEY_BASE} bundle exec rake vite:build \
     && rm -rf node_modules tmp/cache spec test
 
 # Final stage
