@@ -65,8 +65,11 @@ COPY Gemfile Gemfile.lock ./
 RUN bundle config set frozen false \
     && bundle config set deployment true \
     && bundle config set force_ruby_platform true \
+    && bundle config set path '/gems' \
     && bundle install --jobs 4 --retry 3 \
-    && bundle config set frozen true
+    && bundle config set frozen true \
+    && mkdir -p /usr/local/bundle/git \
+    && cp -R /gems/ruby/*/bundler/gems/* /usr/local/bundle/git/ || true
 
 # Install node dependencies
 COPY package.json pnpm-lock.yaml ./
@@ -113,10 +116,7 @@ RUN apk add --no-cache \
     && gem install bundler
 
 # Copy from builder - update paths to match BUNDLE_PATH
-COPY --from=pre-builder /gems /gems
-COPY --from=pre-builder /usr/local/bundle/cache /usr/local/bundle/cache
-COPY --from=pre-builder /usr/local/bundle/extensions /usr/local/bundle/extensions
-COPY --from=pre-builder /usr/local/bundle/specifications /usr/local/bundle/specifications
+COPY --from=pre-builder /gems /usr/local/bundle
 COPY --from=pre-builder /usr/local/bundle/git /usr/local/bundle/git
 COPY --from=pre-builder /app /app
 COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
