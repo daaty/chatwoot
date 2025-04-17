@@ -1,8 +1,8 @@
 # pre-build stage
-FROM node:23-alpine as node
+FROM node:18-alpine as node
 FROM ruby:3.3.3-alpine3.19 AS pre-builder
 
-ARG NODE_VERSION="23.7.0"
+ARG NODE_VERSION="18.19.1"
 ARG PNPM_VERSION="10.2.0"
 ENV NODE_VERSION=${NODE_VERSION}
 ENV PNPM_VERSION=${PNPM_VERSION}
@@ -75,12 +75,14 @@ RUN mkdir -p tmp/pids tmp/cache log \
     && chmod -R 777 tmp \
     && chmod -R 777 log
 
-# Precompile assets in smaller chunks
+# Precompile assets in smaller chunks with optimizations
 RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
-    && export NODE_OPTIONS="--max-old-space-size=2048" \
-    && SECRET_KEY_BASE=${SECRET_KEY_BASE} bundle exec rake vite:build \
+    && export NODE_OPTIONS="--max-old-space-size=2048 --max-http-header-size=1024 --no-experimental-fetch" \
+    && export VITE_BUILD_SPLIT=true \
+    && SECRET_KEY_BASE=${SECRET_KEY_BASE} bundle exec rake vite:build --trace \
     && rm -rf node_modules tmp/cache spec test \
-    && pnpm store prune
+    && pnpm store prune \
+    && pnpm cache clean
 
 # Final stage
 FROM ruby:3.3.3-alpine
