@@ -66,7 +66,6 @@ RUN bundle config set frozen false \
     && bundle config set deployment true \
     && bundle config set force_ruby_platform true \
     && bundle install --jobs 4 --retry 3 \
-    && bundle exec rake assets:precompile \
     && bundle config set frozen true
 
 # Install node dependencies
@@ -82,7 +81,7 @@ RUN mkdir -p tmp/pids tmp/cache log \
     && chmod -R 777 log
 
 # Precompile assets in smaller chunks with optimizations
-RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
+RUN SECRET_KEY_BASE=${SECRET_KEY_BASE} RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
     && export NODE_OPTIONS="--max-old-space-size=2048 --max-http-header-size=1024 --no-experimental-fetch" \
     && export VITE_BUILD_CHUNKING=true \
     && export VITE_BUILD_MINIFY=esbuild \
