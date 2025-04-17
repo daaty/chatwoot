@@ -1,7 +1,0 @@
-ERROR: failed to solve: failed to compute cache key: failed to calculate checksum of ref 16e84cee-075e-4a48-b1ea-856a1d229081::rfnxcrdgg5v5gpqt146z9rbc9: "/.npmrc": not found
-##########################################
-### Error
-### Thu, 17 Apr 2025 00:10:28 GMT
-##########################################
-
-Command failed with exit code 1: docker buildx build --network host -f /etc/easypanel/projects/chatwootcustom/chatwoot/code/docker/Dockerfile -t easypanel/chatwootcustom/chatwoot --label 'keep=true' --build-arg 'SECRET_KEY_BASE=4f658b448aa33b8d00530a99bdd58045' --build-arg 'FRONTEND_URL=https://chatwootcustom-chatwoot.rlf1hu.easypanel.host' --build-arg 'DEFAULT_LOCALE=en' --build-arg 'FORCE_SSL=false' --build-arg 'ENABLE_ACCOUNT_SIGNUP=true' --build-arg 'REDIS_URL=redis://default@chatwootcustom_chatwoot-redis:6379' --build-arg 'REDIS_PASSWORD=7da093c1a52cb4c768b6' --build-arg 'REDIS_OPENSSL_VERIFY_MODE=none' --build-arg 'POSTGRES_DATABASE=chatwootcustom' --build-arg 'POSTGRES_HOST=chatwootcustom_chatwoot-db' --build-arg 'POSTGRES_USERNAME=postgres' --build-arg 'POSTGRES_PASSWORD=b5dcb033305a94901a7d' --build-arg 'RAILS_MAX_THREADS=5' --build-arg 'NODE_ENV=production' --build-arg 'RAILS_ENV=production' --build-arg 'INSTALLATION_ENV=docker' --build-arg 'TRUSTED_PROXIES=*' --build-arg 'GIT_SHA=98cdb0495e0ab18843c97dd620b6a7dcbc9f4575' /etc/easypanel/projects/chatwootcustom/chatwoot/code/
