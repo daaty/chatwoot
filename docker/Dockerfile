@@ -56,12 +56,8 @@ WORKDIR /app
 COPY Gemfile Gemfile.lock ./
 
 # Configure bundler and install gems
-RUN bundle config set --local force_ruby_platform true \
-    && bundle config set deployment true \
-    && bundle config set without 'development test' \
-    && bundle config set path '/gems' \
-    && bundle config get without \
-    && bundle install -j 4 -r 3 --without development test
+RUN bundle config set --local deployment true \
+    && RAILS_ENV=production bundle install --without development test --jobs 4 --retry 3
 
 # Install node dependencies
 COPY package.json pnpm-lock.yaml ./
@@ -109,6 +105,10 @@ RUN apk add --no-cache \
 
 # Copy from builder - update paths to match BUNDLE_PATH
 COPY --from=pre-builder /gems /gems
+COPY --from=pre-builder /usr/local/bundle/cache /usr/local/bundle/cache
+COPY --from=pre-builder /usr/local/bundle/extensions /usr/local/bundle/extensions
+COPY --from=pre-builder /usr/local/bundle/specifications /usr/local/bundle/specifications
+COPY --from=pre-builder /usr/local/bundle/git /usr/local/bundle/git
 COPY --from=pre-builder /app /app
 COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
 
