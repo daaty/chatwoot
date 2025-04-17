@@ -48,9 +48,7 @@ gem 'csv-safe'
 gem 'aws-sdk-s3', require: false
 # original gem isn't maintained actively
 # we wanted updated version of faraday which is a dependency for slack-ruby-client
-# gem 'azure-storage-ruby', git: 'https://github.com/chatwoot/azure-storage-ruby', branch: 'chatwoot', require: false
-# gem 'azure-storage-ruby', '~> 0.15.0.preview'
-gem 'azure-storage-blob', '~> 2.0'
+gem 'azure-storage-ruby', git: 'https://github.com/chatwoot/azure-storage-ruby', branch: 'chatwoot', require: false
 gem 'google-cloud-storage', '>= 1.48.0', require: false
 gem 'image_processing'
 
