@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   base: &base
     build:
@@ -9,77 +11,50 @@ services:
         RAILS_ENV: 'production'
         RAILS_SERVE_STATIC_FILES: 'true'
         SECRET_KEY_BASE: ${SECRET_KEY_BASE:-temp_secret_key_base_for_build}
-    tty: true
-    stdin_open: true
-    image: chatwoot/chatwoot:latest
     env_file: .env
+    volumes:
+      - /data/storage:/app/storage
 
   rails:
     <<: *base
-    build:
-      context: .
-      dockerfile: ./docker/dockerfiles/rails.Dockerfile
-    volumes:
-      - ./public:/app/public
-      - ./storage:/app/storage
-      - bundle:/usr/local/bundle
     depends_on:
       - postgres
       - redis
       - sidekiq
     ports:
-      - 3000:3000
+      - '127.0.0.1:3000:3000'  # Voltando para 127.0.0.1 para maior segurança
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
+      - INSTALLATION_ENV=docker
       - RAILS_SERVE_STATIC_FILES=true
     entrypoint: docker/entrypoints/rails.sh
-    command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
+    command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
+    restart: always
 
   sidekiq:
     <<: *base
-    volumes:
-      - ./storage:/app/storage
-      - bundle:/usr/local/bundle
     depends_on:
       - postgres
       - redis
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
-    command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
-
-  vite:
-    <<: *base
-    build:
-      context: .
-      dockerfile: ./docker/dockerfiles/vite.Dockerfile
-    volumes:
-      - ./:/app:delegated
-      - node_modules:/app/node_modules
-      - packs:/app/public/packs
-      - cache:/app/tmp/cache
-      - bundle:/usr/local/bundle
-    ports:
-      - "3036:3036" # Vite dev server
-    environment:
-      - VITE_DEV_SERVER_HOST=0.0.0.0
-      - NODE_ENV=production
-      - RAILS_ENV=production
-    entrypoint: docker/entrypoints/vite.sh
-    command: bin/vite dev
+      - INSTALLATION_ENV=docker
+    command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
+    restart: always
 
   postgres:
     image: pgvector/pgvector:pg16
     restart: always
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'  # Voltando para 127.0.0.1 para maior segurança
     volumes:
-      - postgres:/data/postgres
+      - /data/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-chatwoot}
 
   redis:
     image: redis:alpine
@@ -87,22 +62,18 @@ services:
     command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
     env_file: .env
     environment:
-      - REDIS_PASSWORD=chatwootdefault
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-chatwootdefault}
     volumes:
-      - redis:/data/redis
+      - /data/redis:/data
     ports:
-      - '6379:6379'
-
-  mailhog:
-    image: mailhog/mailhog
-    ports:
-      - 1025:1025
-      - 8025:8025
+      - '127.0.0.1:6379:6379'  # Voltando para 127.0.0.1 para maior segurança
 
 volumes:
+  # Mantidos os volumes apenas como referência, mas não estamos usando-os
+  # pois agora estamos usando caminhos absolutos como em production.yaml
   postgres:
   redis:
   bundle:
   node_modules:
-  packs:  # Added the missing packs volume
-  cache:  # Added the missing cache volume
+  packs:
+  cache:
