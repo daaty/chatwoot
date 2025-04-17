@@ -4,10 +4,14 @@ FROM ruby:3.3.3-alpine AS pre-builder
 
 ARG SECRET_KEY_BASE
 ARG RAILS_ENV=production
+ARG FRONTEND_URL
+ARG FRONTEND_PROTOCOL
 
 # Set environment variables early
 ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
     RAILS_ENV=${RAILS_ENV} \
+    FRONTEND_URL=${FRONTEND_URL} \
+    FRONTEND_PROTOCOL=${FRONTEND_PROTOCOL} \
     NODE_ENV=production \
     BUNDLE_DEPLOYMENT="true" \
     BUNDLE_PATH="/usr/local/bundle" \

@@ -60,10 +60,9 @@ class Attachment < ApplicationRecord
   def download_url
     return '' unless file.attached?
 
-    # Ensure we have the correct URL options
     ActiveStorage::Current.url_options = {
-      host: ENV.fetch('FRONTEND_URL', 'chatwoot.rotadoscelulares.com'),
-      protocol: 'https'
+      host: ENV.fetch('FRONTEND_URL', 'localhost:3000'),
+      protocol: ENV.fetch('FRONTEND_PROTOCOL', 'http')
     }
 
     file.blob.url
