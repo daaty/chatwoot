@@ -37,6 +37,8 @@ RUN apk update && apk add --no-cache \
     npm \
     libstdc++ \
     libc6-compat \
+    libxml2-dev \
+    libxslt-dev \
     && mkdir -p /var/app \
     && gem install bundler -v 2.5.11
 
@@ -60,7 +62,7 @@ RUN bundle config --global frozen 1 \
     && bundle config set --local without 'development test' \
     && bundle config set --local path '/usr/local/bundle' \
     && bundle config build.nokogiri --use-system-libraries \
-    && bundle install --jobs 4 --retry 3 \
+    && bundle install --jobs 4 --retry 3 --clean \
     && pnpm install --no-optional --prod --network-timeout 300000
 
 # Copy application code
