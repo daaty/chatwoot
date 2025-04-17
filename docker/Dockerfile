@@ -42,9 +42,10 @@ RUN apk update && apk add --no-cache \
     vips \
     protobuf \
     protobuf-dev \
-    grpc \
-    grpc-dev \
-    zlib-dev \
+    cmake \
+    automake \
+    autoconf \
+    libtool \
     && mkdir -p /var/app \
     && gem install bundler -v ${BUNDLER_VERSION}
 
