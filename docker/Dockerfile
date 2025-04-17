@@ -32,6 +32,11 @@ RUN apk update && apk add --no-cache \
     curl \
     xz \
     vips \
+    python3 \
+    nodejs \
+    npm \
+    libstdc++ \
+    libc6-compat \
     && mkdir -p /var/app \
     && gem install bundler -v 2.5.11
 
@@ -51,21 +56,12 @@ COPY Gemfile Gemfile.lock ./
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies with proper config
-RUN apk update && apk add --no-cache \
-    build-base \
-    git \
-    nodejs \
-    yarn \
-    python3 \
-    make \
-    g++ \
-    linux-headers \
-    && bundle config --global frozen 1 \
+RUN bundle config --global frozen 1 \
+    && bundle config set --local without 'development test' \
+    && bundle config set --local path '/usr/local/bundle' \
     && bundle config build.nokogiri --use-system-libraries \
-    && bundle config --local without 'development test' \
-    && bundle config --local path '/usr/local/bundle' \
     && bundle install --jobs 4 --retry 3 \
-    && pnpm install --prod --prefer-offline --network-timeout 300000
+    && pnpm install --no-optional --prod --network-timeout 300000
 
 # Copy application code
 COPY . .
