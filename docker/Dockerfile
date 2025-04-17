@@ -37,21 +37,21 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && npm install -g pnpm@10.2.0 \
-    && pnpm config set store-dir /root/.local/share/pnpm/store
+    && pnpm config set store-dir /root/.local/share/pnpm/store \
+    && pnpm config set node-linker hoisted
 
 WORKDIR /app
 
 # Copy essential files first
 COPY Gemfile Gemfile.lock ./
 COPY package.json pnpm-lock.yaml ./
-COPY .npmrc ./
 
 # Install dependencies with proper config
 RUN bundle config --global frozen 1 \
     && bundle config --local without development:test \
     && bundle config --local path /usr/local/bundle \
     && bundle install -j4 --retry 3 \
-    && pnpm install --no-frozen-lockfile
+    && pnpm install --prod --prefer-offline
 
 # Copy application code
 COPY . .
@@ -62,14 +62,9 @@ RUN mkdir -p tmp/pids tmp/cache \
     && chmod -R 777 log
 
 # Precompile assets
-RUN if [ "$RAILS_ENV" = "production" ]; then \
-      SECRET_KEY_BASE=${SECRET_KEY_BASE} \
-      RAILS_LOG_TO_STDOUT=enabled \
-      NODE_ENV=production \
-      bundle exec rake assets:precompile \
-      && bundle exec rake vite:build \
-      && rm -rf node_modules tmp/cache spec test; \
-    fi
+RUN RAILS_LOG_TO_STDOUT=enabled bundle exec rails assets:precompile \
+    && bundle exec rake vite:build \
+    && rm -rf node_modules tmp/cache spec test
 
 # Final stage
 FROM ruby:3.3.3-alpine
