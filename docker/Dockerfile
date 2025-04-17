@@ -1,24 +1,21 @@
 # pre-build stage
-FROM node:18-alpine AS node
-FROM ruby:3.3.3-alpine AS pre-builder
+FROM node:23-alpine as node
+FROM ruby:3.3.3-alpine3.19 AS pre-builder
 
-ARG SECRET_KEY_BASE
+ARG NODE_VERSION="23.7.0"
+ARG PNPM_VERSION="10.2.0"
+ENV NODE_VERSION=${NODE_VERSION}
+ENV PNPM_VERSION=${PNPM_VERSION}
+
+# ARG default to production settings
+ARG BUNDLE_WITHOUT="development:test"
+ENV BUNDLE_WITHOUT ${BUNDLE_WITHOUT}
+ENV BUNDLER_VERSION=2.5.11
+
 ARG RAILS_ENV=production
-ARG FRONTEND_URL
-ARG FRONTEND_PROTOCOL
-
-# Set environment variables early
-ENV SECRET_KEY_BASE=${SECRET_KEY_BASE} \
-    RAILS_ENV=${RAILS_ENV} \
-    FRONTEND_URL=${FRONTEND_URL} \
-    FRONTEND_PROTOCOL=${FRONTEND_PROTOCOL} \
-    NODE_ENV=production \
-    BUNDLE_DEPLOYMENT="true" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_APP_CONFIG="/usr/local/bundle" \
-    NPM_CONFIG_LOGLEVEL=error \
-    PNPM_HOME="/root/.local/share/pnpm" \
-    PATH="/root/.local/share/pnpm:$PATH"
+ENV RAILS_ENV ${RAILS_ENV}
+ENV BUNDLE_PATH="/gems"
+ENV NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider"
 
 # Install base dependencies
 RUN apk update && apk add --no-cache \
@@ -31,42 +28,42 @@ RUN apk update && apk add --no-cache \
     git \
     curl \
     xz \
+    musl \
+    ruby-full \
+    ruby-dev \
+    gcc \
+    make \
+    musl-dev \
+    openssl-dev \
+    g++ \
+    linux-headers \
     vips \
-    python3 \
-    nodejs \
-    npm \
-    libstdc++ \
-    libc6-compat \
-    libxml2-dev \
-    libxslt-dev \
     && mkdir -p /var/app \
-    && gem install bundler -v 2.5.11
+    && gem install bundler -v ${BUNDLER_VERSION}
 
 # Setup Node and PNPM
 COPY --from=node /usr/local/bin/node /usr/local/bin/
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install -g pnpm@10.2.0 \
-    && pnpm config set store-dir /root/.local/share/pnpm/store \
-    && pnpm config set node-linker hoisted
+    && npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /app
 
 # Copy essential files first
 COPY Gemfile Gemfile.lock ./
-COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies with proper config
-RUN bundle config --global frozen 1 \
-    && bundle config set --local without 'development test' \
-    && bundle config set --local path '/usr/local/bundle' \
-    && bundle config build.nokogiri --use-system-libraries \
-    && bundle install --jobs 4 --retry 3 --clean \
-    && pnpm install --no-optional --prod --network-timeout 300000
+# Configure bundler and install gems
+RUN bundle config set --local force_ruby_platform true \
+    && bundle config set without ${BUNDLE_WITHOUT} \
+    && bundle install -j 4 -r 3
+
+# Install node dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm i
 
 # Copy application code
-COPY . .
+COPY . /app
 
 # Create required directories
 RUN mkdir -p tmp/pids tmp/cache \
