@@ -57,8 +57,11 @@ COPY Gemfile Gemfile.lock ./
 
 # Configure bundler and install gems
 RUN bundle config set --local force_ruby_platform true \
-    && bundle config set without ${BUNDLE_WITHOUT} \
-    && bundle install -j 4 -r 3
+    && bundle config set deployment true \
+    && bundle config set without 'development test' \
+    && bundle config set path '/gems' \
+    && bundle config get without \
+    && bundle install -j 4 -r 3 --without development test
 
 # Install node dependencies
 COPY package.json pnpm-lock.yaml ./
@@ -100,8 +103,8 @@ RUN apk add --no-cache \
     vips \
     && gem install bundler
 
-# Copy from builder
-COPY --from=pre-builder /usr/local/bundle /usr/local/bundle
+# Copy from builder - update paths to match BUNDLE_PATH
+COPY --from=pre-builder /gems /gems
 COPY --from=pre-builder /app /app
 COPY --from=pre-builder /usr/local/bin/node /usr/local/bin/
 
