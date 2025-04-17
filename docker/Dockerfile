@@ -56,8 +56,10 @@ WORKDIR /app
 COPY Gemfile Gemfile.lock ./
 
 # Configure bundler and install gems
-RUN bundle config set --local deployment true \
-    && RAILS_ENV=production bundle install --without development test --jobs 4 --retry 3
+RUN bundle config set frozen false \
+    && bundle config set deployment true \
+    && BUNDLE_FORCE_RUBY_PLATFORM=1 bundle install --jobs 4 --retry 3 \
+    && bundle config set frozen true
 
 # Install node dependencies
 COPY package.json pnpm-lock.yaml ./
