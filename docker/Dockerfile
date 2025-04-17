@@ -66,7 +66,7 @@ RUN pnpm i
 COPY . /app
 
 # Create required directories
-RUN mkdir -p tmp/pids tmp/cache \
+RUN mkdir -p tmp/pids tmp/cache log \
     && chmod -R 777 tmp \
     && chmod -R 777 log
 
