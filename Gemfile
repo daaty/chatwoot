@@ -181,7 +181,6 @@ gem 'shopify_api'
 # Lock protobuf versions
 gem 'google-protobuf', '~> 3.24.0'
 gem 'googleapis-common-protos-types', '~> 1.9.0'
-gem 'grpc', '~> 1.59.0'
 
 ### Gems required only in specific deployment environments ###
 ##############################################################
