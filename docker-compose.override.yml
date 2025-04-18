@@ -1,0 +1,30 @@
+version: '3'
+
+# Este arquivo é usado pelo EasyPanel para otimizar a construção e execução do projeto
+# Ele sobrescreve algumas configurações do docker-compose.production.yaml
+
+services:
+  base:
+    build:
+      args:
+        # Configurações para otimizar o processo de build
+        NODE_OPTIONS: '--max-old-space-size=4096 --openssl-legacy-provider'
+        VITE_SSR: 'false'
+        VITE_OPTIMIZE_DEPS: 'false'
+        BUNDLE_WITHOUT: 'development:test'
+    environment:
+      # Variáveis de ambiente adicionais para otimização
+      - VITE_CONFIG_PATH=/app/vite.config.production.ts
+      - RAILS_MAX_THREADS=5
+      - WEB_CONCURRENCY=2
+
+  rails:
+    shm_size: 512m  # Aumenta o tamanho de memória compartilhada
+    environment:
+      - MALLOC_ARENA_MAX=2  # Limita o uso de memória do malloc
+      - NOKOGIRI_USE_SYSTEM_LIBRARIES=1  # Usa bibliotecas do sistema para economizar memória
+
+  sidekiq:
+    shm_size: 256m
+    environment:
+      - MALLOC_ARENA_MAX=2

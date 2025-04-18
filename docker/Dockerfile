@@ -19,6 +19,7 @@ ENV RAILS_SERVE_STATIC_FILES ${RAILS_SERVE_STATIC_FILES}
 ARG RAILS_ENV=production
 ENV RAILS_ENV ${RAILS_ENV}
 
+# Aumentando a memória disponível para Node.js
 ARG NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider"
 ENV NODE_OPTIONS ${NODE_OPTIONS}
 
@@ -76,13 +77,17 @@ RUN pnpm i
 
 COPY . /app
 
+# Torna o script de otimização executável
+RUN chmod +x /app/docker/entrypoints/optimize-build.sh
+
 # creating a log directory so that image wont fail when RAILS_LOG_TO_STDOUT is false
 # https://github.com/chatwoot/chatwoot/issues/701
 RUN mkdir -p /app/log
 
 # generate production assets if production environment
 RUN if [ "$RAILS_ENV" = "production" ]; then \
-  SECRET_KEY_BASE=precompile_placeholder RAILS_LOG_TO_STDOUT=enabled bundle exec rake assets:precompile \
+  # Usar nosso script de build otimizado em vez do comando padrão \
+  /app/docker/entrypoints/optimize-build.sh \
   && rm -rf spec node_modules tmp/cache; \
   fi
 
@@ -120,6 +125,10 @@ ARG RAILS_ENV=production
 ENV RAILS_ENV ${RAILS_ENV}
 ENV BUNDLE_PATH="/gems"
 
+# Aumentando a memória disponível para Node.js
+ARG NODE_OPTIONS="--max-old-space-size=4096 --openssl-legacy-provider"
+ENV NODE_OPTIONS ${NODE_OPTIONS}
+
 RUN apk update && apk add --no-cache \
   build-base \
   openssl \
@@ -148,5 +157,8 @@ COPY --from=pre-builder /app /app
 COPY --from=pre-builder /app/.git_sha /app/.git_sha
 
 WORKDIR /app
+
+# Torna o script rails.sh executável (redundante, mas para garantir)
+RUN chmod +x /app/docker/entrypoints/rails.sh
 
 EXPOSE 3000
