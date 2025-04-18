@@ -9,7 +9,6 @@ services:
         BUNDLE_WITHOUT: 'development:test'
         RAILS_ENV: 'production'
         RAILS_SERVE_STATIC_FILES: 'true'
-        # Aumentar o tamanho máximo da memória Node para evitar problemas de build
         NODE_OPTIONS: '--max-old-space-size=4096'
     env_file: .env ## Change this file for customized env variables
     volumes:
@@ -26,12 +25,14 @@ services:
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
-      # Adição de variáveis para evitar problemas de memória
       - NODE_OPTIONS=--max-old-space-size=4096
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_PORT=5432
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     restart: always
-    # Adição de limites de memória e CPU
     deploy:
       resources:
         limits:
@@ -49,6 +50,10 @@ services:
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
       - NODE_OPTIONS=--max-old-space-size=4096
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_PORT=5432
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
     restart: always
     deploy:
@@ -67,17 +72,21 @@ services:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command:
+      - "postgres"
+      - "-c"
+      - "password_encryption=md5"
 
   redis:
     image: redis:alpine
     restart: always
-    command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
-    env_file: .env
+    command: ["sh", "-c", "redis-server"]
     volumes:
       - /data/redis:/data
     ports:
