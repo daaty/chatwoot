@@ -12,7 +12,7 @@ services:
         NODE_OPTIONS: '--max-old-space-size=4096'
     env_file: .env ## Change this file for customized env variables
     volumes:
-      - easypanel_chatwoot_storage:/app/storage
+      - chatwoot_storage:/app/storage
 
   rails:
     <<: *base
@@ -37,9 +37,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 3G
         reservations:
-          memory: 1G
+          memory: 2G
 
   sidekiq:
     <<: *base
@@ -69,7 +69,7 @@ services:
     ports:
       - '127.0.0.1:5433:5432'
     volumes:
-      - easypanel_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./docker/pg-init.sh:/docker-entrypoint-initdb.d/pg-init.sh
     environment:
       - POSTGRES_DB=chatwoot_production
@@ -93,26 +93,11 @@ services:
     restart: always
     command: ["redis-server"]
     volumes:
-      - easypanel_redis_data:/data
+      - redis_data:/data
     ports:
       - '127.0.0.1:6380:6379'
 
 volumes:
-  easypanel_postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/lib/easypanel/db/chatwoot/postgres
-      o: bind
-  easypanel_redis_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/lib/easypanel/db/chatwoot/redis
-      o: bind
-  easypanel_chatwoot_storage:
-    driver: local
-    driver_opts:
-      type: none
-      device: /var/lib/easypanel/db/chatwoot/storage
-      o: bind
+  postgres_data:
+  redis_data:
+  chatwoot_storage:
