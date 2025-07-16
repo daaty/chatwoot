@@ -1,0 +1,41 @@
+# EasyPanel Configuration
+# This file tells EasyPanel how to build and deploy the Chatwoot application
+
+# Use the Dockerfile in the root directory
+dockerfile: Dockerfile
+
+# Build arguments that will be passed to the build
+build_args:
+  - RAILS_ENV=production
+  - NODE_ENV=production
+  - BUNDLE_WITHOUT=development:test
+  - RAILS_SERVE_STATIC_FILES=true
+  - NODE_OPTIONS=--max-old-space-size=4096 --openssl-legacy-provider
+
+# Port that the application listens on
+port: 3000
+
+# Health check endpoint
+healthcheck: /api/v1/public/config
+
+# Environment variables template
+environment:
+  - POSTGRES_HOST
+  - POSTGRES_USERNAME  
+  - POSTGRES_PASSWORD
+  - POSTGRES_DATABASE
+  - POSTGRES_PORT
+  - RAILS_ENV
+  - NODE_ENV
+  - REDIS_URL
+  - SECRET_KEY_BASE
+  - INSTALLATION_ENV
+  - RAILS_LOG_TO_STDOUT
+  - RAILS_SERVE_STATIC_FILES
+  - FRONTEND_URL
+  - BACKEND_URL
+  - APP_BASE_URL
+  - FORCE_SSL
+  - ENABLE_ACCOUNT_SIGNUP
+  - ACTIVE_STORAGE_SERVICE
+  - DEFAULT_LOCALE

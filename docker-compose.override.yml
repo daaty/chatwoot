@@ -1,5 +1,3 @@
-version: '3'
-
 # Este arquivo é usado pelo EasyPanel para otimizar a construção e execução do projeto
 # Ele sobrescreve algumas configurações do docker-compose.production.yaml
 
